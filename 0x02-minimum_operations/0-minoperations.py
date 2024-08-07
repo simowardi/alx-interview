@@ -3,6 +3,7 @@
 Module for calculating minimum operations to achieve n H characters.
 """
 
+
 def minOperations(n):
     """
     Calculates the fewest number of operations needed to result in exactly n H characters.
@@ -18,19 +19,20 @@ def minOperations(n):
         return 0
     
     operations = 0  # Counter for the number of operations
-    current_h = 1   # Current number of H's in the file (starts with 1 H)
-    clipboard = 0   # Content of the clipboard (number of H's copied)
+    divisor = 2     # Start with the smallest prime number
     
-    while current_h < n:
-        # If we haven't copied anything yet, or if it's more efficient to copy all
-        if clipboard == 0 or n - current_h >= current_h:
-            # Copy All
-            clipboard = current_h
-            operations += 1
+    # Continue until n is reduced to 1
+    while n > 1:
+        # While n is divisible by the current divisor
+        while n % divisor == 0:
+            operations += divisor  # Add the number of operations (Copy All + Paste(s))
+            n //= divisor          # Reduce n by dividing it by the divisor
+        divisor += 1  # Move to the next potential divisor
         
-        # Paste
-        current_h += clipboard
-        operations += 1
+        # If the square of divisor is greater than n, n is prime
+        if divisor * divisor > n:
+            if n > 1:
+                operations += n  # Add n operations for the remaining prime factor
+                break
     
-    # Check if we've achieved exactly n H's
-    return operations if current_h == n else 0
+    return operations
