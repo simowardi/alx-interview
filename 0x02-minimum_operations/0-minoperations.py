@@ -10,28 +10,45 @@ def minOperations(n):
     if not isinstance(n, int):
         return 0
 
-    # Counter for the number of operations performed
-    operation_count = 0
-    #  Stores the number of H's that can be copied and pasted
-    buffer = 0
-    # Represents the current number of H's in the file
+    # The number of H's currently in the file
     current_h = 1
+    # The number of H's currently stored in the clipboard
+    clipboard_h = 0
+    # The number of operations performed
+    operation_count = 0
 
     while current_h < n:
-        if buffer == 0:
-            # Perform the initial Copy All and Paste operations to start building the H's
-            buffer = current_h
-            current_h += buffer
-            operation_count += 2
-        elif n - current_h > 0 and (n - current_h) % current_h == 0:
-            # Perform Copy All and Paste operations when it's more efficient to do so, 
-            # to increase the number of H's in the file
-            buffer = current_h
-            current_h += buffer
-            operation_count += 2
-        elif buffer > 0:
-            # Perform a Paste operation to add the contents of the buffer to the current H's
-            current_h += buffer
+        # If the clipboard is empty
+        if clipboard_h == 0:
+            # Perform a Copy All operation
+            clipboard_h = current_h
+            # Increment the operation count
             operation_count += 1
-            
-    return operation_count
+        # If we haven't pasted anything yet
+        if current_h == 1:
+            # Perform a Paste operation
+            current_h += clipboard_h
+            # Increment the operation count
+            operation_count += 1
+            # Continue to the next loop iteration
+            continue
+        remaining_h = n - current_h  # The remaining H's needed to reach the target
+        # Check if it's impossible to achieve the target
+        if remaining_h < clipboard_h:
+            return 0
+        # If the remaining H's can't be divided by the current H's
+        if remaining_h % current_h != 0:
+            # Perform a Paste operation
+            current_h += clipboard_h
+            # Increment the operation count
+            operation_count += 1
+        else:
+            # Perform a Copy All and Paste operation
+            clipboard_h = current_h
+            current_h += clipboard_h
+            operation_count += 2
+    # If we've reached the target
+    if current_h == n:
+        return operation_count
+    else:
+        return 0
