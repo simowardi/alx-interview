@@ -1,38 +1,10 @@
 #!/usr/bin/python3
 """
-A script for parsing HTTP request logs and computing various metrics.
+This script reads lines from stdin, computes various metrics based on the input format,
+and prints the metrics at regular intervals or when a keyboard interrupt is received.
 """
-import re
 import sys
 
-def extract_log_data(log_line):
-    """
-    Extracts the relevant information from a log line.
-
-    Args:
-        log_line (str): A log line in the expected format.
-
-    Returns:
-        dict: A dictionary containing the IP address, date, status code, and file size.
-    """
-    log_format = (
-        r'\s*(?P<ip>\S+)\s*',
-        r'\s*\[(?P<date>\d+\-\d+\-\d+ \d+:\d+:\d+\.\d+)\]',
-        r'\s*"(?P<request>[^"]*)"\s*',
-        r'\s*(?P<status_code>\S+)',
-        r'\s*(?P<file_size>\d+)'
-    )
-    log_pattern = '{}\\-{}{}{}{}\\s*'.format(*log_format)
-    match = re.fullmatch(log_pattern, log_line)
-    if match:
-        return {
-            'ip': match.group('ip'),
-            'date': match.group('date'),
-            'status_code': match.group('status_code'),
-            'file_size': int(match.group('file_size'))
-        }
-    else:
-        return None
 
 def print_metrics(total_file_size, status_code_counts):
     """
@@ -46,53 +18,46 @@ def print_metrics(total_file_size, status_code_counts):
     for status_code in sorted(status_code_counts):
         print(f"{status_code}: {status_code_counts[status_code]}")
 
-def update_metrics(log_line, total_file_size, status_code_counts):
+
+def parse_log_line(line):
     """
-    Updates the metrics from a given HTTP request log line.
+    Extracts the relevant information from a log line.
 
     Args:
-        log_line (str): The line of input from which to retrieve the metrics.
-        total_file_size (int): The current total file size.
-        status_code_counts (dict): A dictionary containing the count of each status code.
+        line (str): A log line in the expected format.
 
     Returns:
-        int: The new total file size.
+        tuple: A tuple containing the IP address, date, status code, and file size.
+        If the line does not match the expected format, None is returned.
     """
-    log_data = extract_log_data(log_line)
-    if log_data:
-        status_code = log_data['status_code']
-        if status_code in status_code_counts:
-            status_code_counts[status_code] += 1
-        return total_file_size + log_data['file_size']
-    else:
-        return total_file_size
+    parts = line.strip().split(" ")
+    if len(parts) != 9 or parts[2] != '"GET' or parts[4][-1] != '"':
+        return None
+    ip_address, date, _, status_code, file_size = parts[0], parts[3][1:-1], parts[5], int(parts[6]), int(parts[8][:-1])
+    return ip_address, date, status_code, file_size
+
 
 def main():
     """
     Starts the log parser.
     """
-    line_count = 0
     total_file_size = 0
-    status_code_counts = {
-        '200': 0,
-        '301': 0,
-        '400': 0,
-        '401': 0,
-        '403': 0,
-        '404': 0,
-        '405': 0,
-        '500': 0
-    }
+    status_code_counts = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
+    line_count = 0
 
     try:
-        while True:
-            line = input()
-            total_file_size = update_metrics(line, total_file_size, status_code_counts)
-            line_count += 1
-            if line_count % 10 == 0:
-                print_metrics(total_file_size, status_code_counts)
-    except (KeyboardInterrupt, EOFError):
+        for line in sys.stdin:
+            log_data = parse_log_line(line)
+            if log_data:
+                ip_address, date, status_code, file_size = log_data
+                total_file_size += file_size
+                status_code_counts[status_code] += 1
+                line_count += 1
+                if line_count % 10 == 0:
+                    print_metrics(total_file_size, status_code_counts)
+    except KeyboardInterrupt:
         print_metrics(total_file_size, status_code_counts)
+
 
 if __name__ == '__main__':
     main()
