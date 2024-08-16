@@ -28,6 +28,7 @@ status_codes = {
 total_file_size = 0
 line_count = 0
 
+
 def print_statistics():
     '''
     Print the computed statistics:
@@ -39,21 +40,22 @@ def print_statistics():
         if status_codes[code] > 0:
             print('{}: {}'.format(code, status_codes[code]))
 
+
 try:
     for line in sys.stdin:
         line_count += 1
-        
+
         # Parse the line
         parts = line.split()
         if len(parts) > 4:
             status_code = parts[-2]
             file_size = parts[-1]
-            
+
             # Update metrics
             if status_code in status_codes:
                 status_codes[status_code] += 1
             total_file_size += int(file_size)
-        
+
         # Print statistics every 10 lines
         if line_count % 10 == 0:
             print_statistics()
